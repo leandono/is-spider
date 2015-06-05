@@ -1,0 +1,33 @@
+{
+  "env": {
+    "node": true,
+    "browser": true
+  },
+  "globals": {
+    "app": true,
+    "request": true,
+    "async": true,
+    "_": true,
+    "newrelic": true,
+    "logger": true,
+    "errs": true,
+    "analytics": true,
+    "utils": true,
+    "phoneNumber": true,
+    "critical": true
+  },
+  "rules": {
+    "quotes": [
+      1,
+      "single"
+    ],
+    "no-use-before-define": 0,
+    "no-underscore-dangle": 0,
+    "new-cap": 1,
+    "camelcase": 1,
+    "no-unused-vars": 1,
+    "consistent-return": 1,
+    "no-trailing-spaces": 0,
+    "no-console": 1
+  }
+}

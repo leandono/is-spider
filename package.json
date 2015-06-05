@@ -1,0 +1,22 @@
+{
+  "name": "is-spider",
+  "version": "1.0.0",
+  "description": "Try to know if the user agent string come from a spider using differents rules",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "bot",
+    "user-agent",
+    "crawler",
+    "spider"
+  ],
+  "author": "Leandro D'Onofrio",
+  "license": "ISC",
+  "dependencies": {
+    "async": "^1.2.0",
+    "lodash": "^3.9.3",
+    "useragent": "^2.1.6"
+  }
+}
