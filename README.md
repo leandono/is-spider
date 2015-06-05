@@ -66,7 +66,7 @@ var config = {
 		]
 	};
 	
-isSpider(ua, configuration, function(err, is){
+isSpider(ua, config, function(err, is){
 	
 	if (err) throw (err);
 	
