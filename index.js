@@ -8,23 +8,7 @@ var async = require('async');
 var _ = require('lodash');
 
 /**
- * Default configuration
- */
-var _defaultConfig = {
-	uaBlackList: [
-		'AdsBot',
-		'adbeat',
-		'bingbot'
-	],
-	deviceBlackList: [
-		'Spider'
-	],
-	customRules: [],
-	isBrowser: true
-};
-
-/**
- * Try to know if the user agent string come from a bot using differents rules
+ * Using differents rules, try to know if a user agent string come from a spider
  * @param {string} ua The user-agent string
  * @param {object} customConfig Custom configuration
  * @param {function} callback Callback function
@@ -33,161 +17,206 @@ function detect(ua, customConfig, callback) {
 
 	var cb;
 	var config;
+	var defaultConfig = {
+
+		//Some UA that 'useragent' can't detect as spider
+		uaBlackList: [
+			'adbeat',
+			'bingbot'
+		],
+
+		//Default device detected as spider by 'useragent'
+		deviceBlackList: [
+			'Spider'
+		],
+
+		//Check if the UA comes from a personal browser
+		isBrowser: true,
+
+		//Custom validation rules
+		customRules: []
+
+	};
 
 	//Params overload
 	if (_.isFunction(customConfig)) {
 
-		config = _defaultConfig;
+		config = defaultConfig;
 		cb = customConfig;
 
 	} else {
 
-		config = _.assign(_defaultConfig, customConfig);
+		config = _.assign(defaultConfig, customConfig);
 		cb = callback;
 
 	}
 
-	//Run the steps in serie
-	async.series([
+	//Check if the UA exists
+	if (!ua) {
 
-		//Zero rule: Check is the UA is empty
-		//Some false requests come without user-agent
-		function(next) {
+		cb(new Error('The user-agent is null or empty'));
 
-			//Continue if exists
-			if (ua) {
+	} else {
 
-				next();
+		async.parallel([
+			async.apply(_uaBlackList, ua, config),
+			async.apply(_deviceBlackList, ua, config),
+			async.apply(_isBrowser, ua, config),
+			async.apply(_customRules, ua, config)
+		], function(exit) {
 
-			} else {
+			if (_.isError(exit)) {
 
-				next(true);
-
-			}
-
-		},
-
-		//First rule: Check the UA in the uaBlackList
-		function(next) {
-
-			var blacklist = config.uaBlackList;
-
-			//Check config
-			if (blacklist.length) {
-
-				//Check if exists in the blacklist
-				if (ua.match(blacklist.join('|'))) {
-
-					next(true);
-
-				} else {
-
-					next();
-
-				}
+				cb(exit, true);
 
 			} else {
 
-				next();
+				cb(null, exit ? true : false);
 
 			}
 
-		},
+		});
 
-		//Second rule: Check device blacklist
-		function(next) {
+	}
 
-			var blacklist = config.deviceBlackList;
+}
 
-			//Check config
-			if (blacklist.length) {
+/**
+ * Execute custom rules of validation
+ * @param  {string} ua User Agent
+ * @param  {object} config Configuration
+ * @param  {Function} next Async callback
+ */
+function _customRules(ua, config, next) {
 
-				var device = useragent.parse(ua).device.toString();
+	var rules = config.customRules;
 
-				//Check if exists in the blacklist
-				if (blacklist.indexOf(device) > -1) {
+	//Check config
+	if (_.isEmpty(rules) === false) {
 
-					next(true);
+		//Process each rule
+		async.each(rules, function(rule, done) {
 
-				} else {
+			if (_.isFunction(rule)) {
 
-					next();
-
-				}
+				rule(ua, done);
 
 			} else {
 
-				next();
+				done();
 
 			}
 
-		},
+		}, function(is) {
 
-		//Third rule: Check custom rules
-		function(next) {
+			next(is);
 
-			var rules = config.customRules;
+		});
 
-			//Check config
-			if (rules.length) {
+	} else {
 
-				//Process each rule
-				async.each(rules, function(rule, done) {
+		next();
 
-					if (_.isFunction(rule)) {
+	}
 
-						rule(done);
+}
 
-					} else {
+/**
+ * Check if the UA exists in the uaBlackList
+ * @param  {string} ua User Agent
+ * @param  {object} config Configuration
+ * @param  {Function} next Async callback
+ */
+function _uaBlackList(ua, config, next) {
 
-						done();
+	var blacklist = config.uaBlackList;
 
-					}
+	//Check config
+	if (_.isEmpty(blacklist) === false) {
 
-				}, function(is) {
+		//Escape string for regex
+		blacklist = _regexerize(blacklist);
 
-					next(is);
+		//Check if exists in the blacklist
+		next(ua.match(blacklist.join('|')));
 
-				});
+	} else {
 
-			} else {
+		next();
 
-				next();
+	}
 
-			}
+}
 
-		},
+/**
+ * Check if the UA belongs to a spider device
+ * @param  {string} ua User Agent
+ * @param  {object} config Configuration
+ * @param  {Function} next Async callback
+ */
+function _deviceBlackList(ua, config, next) {
 
-		//Four rule: Check if is a browser
-		function(next) {
+	var blacklist = config.deviceBlackList;
 
-			//Check config
-			if (config.isBrowser === true) {
+	//Check config
+	if (_.isEmpty(blacklist) === false) {
 
-				//Check if is a valid browser
-				var browsers = useragent.is(ua);
+		var device = useragent.parse(ua).device.toString();
 
-				//Detele the prop version
-				delete browsers.version;
+		//Escape string for regex
+		blacklist = _regexerize(blacklist);
 
-				//Remove null results
-				var results = _.pick(browsers, _.identity);
+		//Check if exists in the blacklist
+		next(device.match(blacklist.join('|')));
 
-				//Continue
-				next(_.isEmpty(results));
+	} else {
 
-			} else {
+		next();
 
-				next();
+	}
 
-			}
+}
 
-		}
+/**
+ * Check if the UA belongs to a web browser
+ * @param  {string} ua User Agent
+ * @param  {object} config Configuration
+ * @param  {Function} next Async callback
+ */
+function _isBrowser(ua, config, next) {
 
-	], function(exit) {
+	//Check config
+	if (config.isBrowser === true) {
 
-		cb(exit ? true : false);
+		//Check if is a valid browser
+		var browsers = useragent.is(ua);
 
+		//Detele the prop version
+		delete browsers.version;
+
+		//Remove null results
+		var is = _.isEmpty(_.pick(browsers, _.identity));
+
+		next(is ? true : null);
+
+	} else {
+
+		next();
+
+	}
+
+}
+
+/**
+ * Escape a list of strings to use in a regex definition
+ * @see http://stackoverflow.com/a/3561711
+ * @param  {array} list List of strings to change
+ * @return  {array} The list changed
+ */
+function _regexerize(list) {
+
+	return _.map(list, function(str) {
+		return str.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
 	});
 
 }

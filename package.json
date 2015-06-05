@@ -1,10 +1,10 @@
 {
   "name": "is-spider",
-  "version": "1.0.0",
-  "description": "Try to know if the user agent string come from a spider using differents rules",
+  "version": "2.0.0",
+  "description": "Using differents rules, try to know if a user agent string comes from a spider",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "node test.js"
   },
   "keywords": [
     "bot",
@@ -13,7 +13,7 @@
     "spider"
   ],
   "author": "Leandro D'Onofrio",
-  "license": "ISC",
+  "license": "MIT",
   "dependencies": {
     "async": "^1.2.0",
     "lodash": "^3.9.3",
