@@ -1,6 +1,6 @@
 {
   "name": "is-spider",
-  "version": "2.0.0",
+  "version": "2.0.1",
   "description": "Using differents rules, try to know if a user agent string comes from a spider",
   "main": "index.js",
   "scripts": {
@@ -13,6 +13,10 @@
     "spider"
   ],
   "author": "Leandro D'Onofrio",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/rodati/is-spider.git"
+  },
   "license": "MIT",
   "dependencies": {
     "async": "^1.2.0",
